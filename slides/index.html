@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>Programming Assignment 4</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Ziling Zhu" />
+    <meta name="date" content="2021-03-08" />
+    <script src="libs/header-attrs-2.6/header-attrs.js"></script>
+    <link href="libs/remark-css-0.0.1/hygge.css" rel="stylesheet" />
+    <link href="libs/remark-css-0.0.1/rutgers.css" rel="stylesheet" />
+    <link href="libs/remark-css-0.0.1/rutgers-fonts.css" rel="stylesheet" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# Programming Assignment 4
+## Data Science for Linguists
+### Ziling Zhu
+### Department of Linguistics, Rutgers University
+### 2021-03-08
+
+---
+
+# Load the untidy dataset
+
+
+```r
+library(readr)
+fri &lt;- read_csv("../../pa4/data_raw/fricatives/fricatives.csv")
+
+head(fri)
+```
+
+```
+## # A tibble: 6 x 5
+##     obs s_cog s_skewness sh_cog sh_skewness
+##   &lt;dbl&gt; &lt;dbl&gt;      &lt;dbl&gt;  &lt;dbl&gt;       &lt;dbl&gt;
+## 1     1 3285.     -1.22   2409.     -0.248 
+## 2     2 4664.     -1.19   2823.     -0.0165
+## 3     3 4680.     -1.07   2898.      0.118 
+## 4     4 4874.     -1.06   3617.      0.198 
+## 5     5 4879.     -1.03   3668.      0.212 
+## 6     6 5195.     -0.949  3685.      0.262
+```
+
+---
+# Tidy the dataset
+
+
+```r
+library(tidyr)
+fri_tidy &lt;- fri %&gt;%
+  pivot_longer(., 
+               !obs,
+               names_to = c("phoneme", ".value"),
+               names_sep = "_")
+
+head(fri_tidy)
+```
+
+```
+## # A tibble: 6 x 4
+##     obs phoneme   cog skewness
+##   &lt;dbl&gt; &lt;chr&gt;   &lt;dbl&gt;    &lt;dbl&gt;
+## 1     1 s       3285.  -1.22  
+## 2     1 sh      2409.  -0.248 
+## 3     2 s       4664.  -1.19  
+## 4     2 sh      2823.  -0.0165
+## 5     3 s       4680.  -1.07  
+## 6     3 sh      2898.   0.118
+```
+
+---
+# Export the tidy dataset
+
+
+```r
+library(readr)
+write.csv(fri_tidy, 
+          file = "../../pa4/data_tidy/fricatives_tidy.csv")
+```
+
+---
+# Descriptive statistics
+
+
+```r
+summary(fri_tidy)
+```
+
+```
+##       obs          phoneme               cog          skewness      
+##  Min.   : 1.00   Length:40          Min.   :2409   Min.   :-1.2153  
+##  1st Qu.: 5.75   Class :character   1st Qu.:3954   1st Qu.:-0.7403  
+##  Median :10.50   Mode  :character   Median :4707   Median :-0.1875  
+##  Mean   :10.50                      Mean   :4843   Mean   :-0.1093  
+##  3rd Qu.:15.25                      3rd Qu.:5845   3rd Qu.: 0.5266  
+##  Max.   :20.00                      Max.   :7095   Max.   : 1.5187
+```
+
+---
+# Plot cog as a function of phoneme ...
+
+
+```r
+library(tidyverse)
+fri_tidy %&gt;% 
+  ggplot() + 
+  aes(x = phoneme, y = cog) +
+  geom_boxplot() + 
+  labs(x = "Phoneme", 
+       y = "Center of Gravity", 
+       title = "Center of Gravity as a function of Phoneme") +
+  theme_minimal(base_family = "Palatino") +
+  theme(text=element_text(size=25),
+        axis.text=element_text(size=20),
+        axis.title=element_text(size=20, face="bold"))
+```
+
+--
+... see the next slide for the boxplot ...
+---
+# ... and the boxplot
+
+.center[
+&lt;img src="index_files/figure-html/unnamed-chunk-6-1.png" width="792" /&gt;
+]
+
+---
+# Plot skewness as a function of phoneme ...
+
+```r
+fri_tidy %&gt;% 
+  ggplot() +
+  aes(x = phoneme, y = skewness) +
+  geom_point(alpha = 0.3) +
+  stat_summary(color = "navy", size =1) +
+  labs(x = "Phoneme", 
+       y = "Skewness", 
+       title = "Skewness as a function of Phoneme") +
+  theme_minimal(base_family = "Palatino") +
+  theme(text=element_text(size=25),
+        axis.text=element_text(size=20),
+        axis.title=element_text(size=20, face="bold"))
+```
+--
+... see the next slide for the scatterplot ...
+
+---
+#... and the scatterplot with stat summary
+
+.center[
+&lt;img src="index_files/figure-html/unnamed-chunk-8-1.png" width="792" /&gt;
+]
+
+---
+# Transform the tidy dataset
+
+
+```r
+fri_tidy_s &lt;- fri_tidy %&gt;% 
+  filter(., phoneme == "s")
+
+head(fri_tidy_s)
+```
+
+```
+## # A tibble: 6 x 4
+##     obs phoneme   cog skewness
+##   &lt;dbl&gt; &lt;chr&gt;   &lt;dbl&gt;    &lt;dbl&gt;
+## 1     1 s       3285.   -1.22 
+## 2     2 s       4664.   -1.19 
+## 3     3 s       4680.   -1.07 
+## 4     4 s       4874.   -1.06 
+## 5     5 s       4879.   -1.03 
+## 6     6 s       5195.   -0.949
+```
+
+---
+# Fit a model ...
+... that examines cog as a function of skewness for the [s] segments
+
+
+```r
+model &lt;- lm(cog ~ skewness, data = fri_tidy_s)
+summary(model)
+```
+
+```
+## 
+## Call:
+## lm(formula = cog ~ skewness, data = fri_tidy_s)
+## 
+## Residuals:
+##      Min       1Q   Median       3Q      Max 
+## -1060.74   -21.72    58.96   123.00   405.24 
+## 
+## Coefficients:
+##             Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept)   8027.2      212.3   37.80  &lt; 2e-16 ***
+## skewness      3029.1      259.1   11.69 7.69e-10 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 320.1 on 18 degrees of freedom
+## Multiple R-squared:  0.8836,	Adjusted R-squared:  0.8771 
+## F-statistic: 136.6 on 1 and 18 DF,  p-value: 7.691e-10
+```
+
+---
+
+# Plot cog as a function of skewness for [s] ...
+
+```r
+fri_tidy_s %&gt;% 
+  ggplot() +
+  aes(x = skewness, y = cog) +
+  geom_point(alpha = 1, size = 2) +
+  geom_smooth(method = "lm", color = "navy",
+              size = 1, se = FALSE) +
+  labs(x = "Skewness", 
+       y = "Center of Gravity", 
+       title = "Center of Gravity as a function of Skewness for [s]"
+       ) +
+  theme_minimal(base_family = "Palatino") +
+  theme(text=element_text(size=25),
+        axis.text=element_text(size=20),
+        axis.title=element_text(size=20, face="bold"))
+```
+
+--
+... see the next slide for the scatterplot ...
+
+---
+# ... and the scatterplot
+
+.center[
+&lt;img src="index_files/figure-html/unnamed-chunk-12-1.png" width="792" /&gt;
+]
+
+---
+# Check model diagnostics
+
+
+```r
+library(ds4ling)
+ds4ling::diagnosis(model)
+```
+
+&lt;img src="index_files/figure-html/unnamed-chunk-13-1.png" width="792" /&gt;
+
+---
+# Run a few more diagnostics ...
+
+```r
+#We eyeball the scatterplot on page 13,
+#and the relationship is linear!
+
+#The mean of residuals is (almost) zero.
+mean(model$residual)
+```
+
+```
+## [1] 1.136591e-14
+```
+
+```r
+#The homoskedasticity plot,
+#the first figure on page 14, looks like a blob.
+
+#We run the Durbin-Watson test,
+#and the residuals are not autocorrelated,
+#because we see a p-value higher than 0.05.
+library(car)
+durbinWatsonTest(model)
+```
+
+```
+##  lag Autocorrelation D-W Statistic p-value
+##    1     -0.03770938      1.302818   0.082
+##  Alternative hypothesis: rho != 0
+```
+
+---
+# ... and one more
+
+
+```r
+#Predictors and residuals are uncorrelated!
+cor.test(fri_tidy_s$skewness, model$residuals)
+```
+
+```
+## 
+## 	Pearson's product-moment correlation
+## 
+## data:  fri_tidy_s$skewness and model$residuals
+## t = -1.2832e-15, df = 18, p-value = 1
+## alternative hypothesis: true correlation is not equal to 0
+## 95 percent confidence interval:
+##  -0.4425208  0.4425208
+## sample estimates:
+##           cor 
+## -3.024595e-16
+```
+
+---
+# Write up the results
+.pull-left[
+
+For the [s] segments, **cog** is positively correlated to **skewness** (p &lt; 0.05). The scatterplot (on page 13) suggests that the higher the skewness, the higher the center of gravity. Their relation is linear, and the assumptions this claim is under prove to be valid:
++ the mean of the residuals is (almost) zero; 
+]
+
+---
+
+# Write up the results
+.pull-left[
+
+For the [s] segments, **cog** is positively correlated to **skewness** (p &lt; 0.05). The scatterplot (on page 13) suggests that the higher the skewness, the higher the center of gravity. Their relation is linear, and the assumptions this claim is under prove to be valid:
++ the mean of the residuals is (almost) zero; 
++ the homoskedasticity plot is not fan-shaped;
+]
+
+---
+# Write up the results
+.pull-left[
+
+For the [s] segments, **cog** is positively correlated to **skewness** (p &lt; 0.05). The scatterplot (on page 13) suggests that the higher the skewness, the higher the center of gravity. Their relation is linear, and the assumptions this claim is under prove to be valid:
++ the mean of the residuals is (almost) zero; 
++ the homoskedasticity plot is not fan-shaped;
++ residuals are not autocorrelated;
+]
+
+---
+# Write up the results
+.pull-left[
+
+For the [s] segments, **cog** is positively correlated to **skewness** (p &lt; 0.05). The scatterplot (on page 13) suggests that the higher the skewness, the higher the center of gravity. Their relation is linear, and the assumptions this claim is under prove to be valid:
++ the mean of the residuals is (almost) zero; 
++ the homoskedasticity plot is not fan-shaped;
++ residuals are not autocorrelated;
++ predicators and residuals are uncorrelated.
+]
+
+---
+# Write up the results
+.pull-left[
+
+For the [s] segments, **cog** is positively correlated to **skewness** (p &lt; 0.05). The scatterplot (on page 13) suggests that the higher the skewness, the higher the center of gravity. Their relation is linear, and the assumptions this claim is under prove to be valid:
++ the mean of the residuals is (almost) zero; 
++ the homoskedasticity plot is not fan-shaped;
++ residuals are not autocorrelated;
++ predicators and residuals are uncorrelated.
+]
+
+.pull-right[
+![](https://static.toiimg.com/photo/msid-74478877/74478877.jpg?909051)
+]
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"ratio": "16:9",
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>

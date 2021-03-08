@@ -1,0 +1,285 @@
+---
+title: "Programming Assignment 4"
+subtitle: "Data Science for Linguists"
+author: "Ziling Zhu"
+institute: "Department of Linguistics, Rutgers University"
+date: "`r Sys.Date()`"
+output:
+  xaringan::moon_reader:
+    css: ["hygge", "rutgers", "rutgers-fonts"]
+    lib_dir: libs
+    nature:
+      ratio: "16:9"
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+---
+# Load the untidy dataset
+
+```{r, message=F}
+library(readr)
+fri <- read_csv("../../pa4/data_raw/fricatives/fricatives.csv")
+
+head(fri)
+```
+
+---
+# Tidy the dataset
+
+```{r, message=F}
+library(tidyr)
+fri_tidy <- fri %>%
+  pivot_longer(., 
+               !obs,
+               names_to = c("phoneme", ".value"),
+               names_sep = "_")
+
+head(fri_tidy)
+```
+
+---
+# Export the tidy dataset
+
+```{r, message=F}
+library(readr)
+write.csv(fri_tidy, 
+          file = "../../pa4/data_tidy/fricatives_tidy.csv")
+```
+
+---
+# Descriptive statistics
+
+```{r, message=F}
+summary(fri_tidy)
+```
+
+---
+# Plot cog as a function of phoneme ...
+
+```{r, message = F, fig.show = "hide"}
+library(tidyverse)
+fri_tidy %>% 
+  ggplot() + 
+  aes(x = phoneme, y = cog) +
+  geom_boxplot() + 
+  labs(x = "Phoneme", 
+       y = "Center of Gravity", 
+       title = "Center of Gravity as a function of Phoneme") +
+  theme_minimal(base_family = "Palatino") +
+  theme(text=element_text(size=25),
+        axis.text=element_text(size=20),
+        axis.title=element_text(size=20, face="bold"))
+```
+
+--
+... see the next slide for the boxplot ...
+---
+# ... and the boxplot
+
+.center[
+```{r, message = F, echo=F, fig.retina=2, fig.width=11, fig.height=7}
+library(tidyverse)
+fri_tidy %>% 
+  ggplot() + 
+  aes(x = phoneme, y = cog) +
+  geom_boxplot() + 
+  labs(x = "Phoneme", 
+       y = "Center of Gravity", 
+       title = "Center of Gravity as a function of Phoneme") +
+  theme_minimal(base_family = "Palatino") +
+  theme(text=element_text(size=25),
+        axis.text=element_text(size=20),
+        axis.title=element_text(size=20, face="bold"))
+```
+]
+
+---
+# Plot skewness as a function of phoneme ...
+```{r, message=F, fig.show="hide"}
+fri_tidy %>% 
+  ggplot() +
+  aes(x = phoneme, y = skewness) +
+  geom_point(alpha = 0.3) +
+  stat_summary(color = "navy", size =1) +
+  labs(x = "Phoneme", 
+       y = "Skewness", 
+       title = "Skewness as a function of Phoneme") +
+  theme_minimal(base_family = "Palatino") +
+  theme(text=element_text(size=25),
+        axis.text=element_text(size=20),
+        axis.title=element_text(size=20, face="bold"))
+```
+--
+... see the next slide for the scatterplot ...
+
+---
+#... and the scatterplot with stat summary
+
+.center[
+```{r, message=F, echo=F, fig.width = 11, fig.height=7, fig.retina =2}
+fri_tidy %>% 
+  ggplot() +
+  aes(x = phoneme, y = skewness) +
+  geom_point(alpha = 0.3) +
+  stat_summary(color = "navy", size =1) +
+  labs(x = "Phoneme", 
+       y = "Skewness", 
+       title = "Skewness as a function of Phoneme") +
+  theme_minimal(base_family = "Palatino") +
+  theme(text=element_text(size=25),
+        axis.text=element_text(size=20),
+        axis.title=element_text(size=20, face="bold"))
+```
+]
+
+---
+# Transform the tidy dataset
+
+```{r, message=F}
+fri_tidy_s <- fri_tidy %>% 
+  filter(., phoneme == "s")
+
+head(fri_tidy_s)
+```
+
+---
+# Fit a model ...
+... that examines cog as a function of skewness for the [s] segments
+
+```{r, message=F}
+model <- lm(cog ~ skewness, data = fri_tidy_s)
+summary(model)
+```
+
+---
+
+# Plot cog as a function of skewness for [s] ...
+```{r, message=F, fig.show="hide", warning=F}
+fri_tidy_s %>% 
+  ggplot() +
+  aes(x = skewness, y = cog) +
+  geom_point(alpha = 1, size = 2) +
+  geom_smooth(method = "lm", color = "navy",
+              size = 1, se = FALSE) +
+  labs(x = "Skewness", 
+       y = "Center of Gravity", 
+       title = "Center of Gravity as a function of Skewness for [s]"
+       ) +
+  theme_minimal(base_family = "Palatino") +
+  theme(text=element_text(size=25),
+        axis.text=element_text(size=20),
+        axis.title=element_text(size=20, face="bold"))
+```
+
+--
+... see the next slide for the scatterplot ...
+
+---
+# ... and the scatterplot
+
+.center[
+```{r, message=F, echo=F, fig.width = 11, fig.height=7, fig.retina =2, warning=F}
+fri_tidy_s %>% 
+  ggplot() +
+  aes(x = skewness, y = cog) +
+  geom_point(alpha = 1, size = 2) +
+  geom_smooth(method = "lm", color = "navy",
+              size = 1, se = FALSE) +
+  labs(x = "Skewness", 
+       y = "Center of Gravity", 
+       title = "Center of Gravity as a function of Skewness for [s]"
+       ) +
+  theme_minimal(base_family = "Palatino") +
+  theme(text=element_text(size=25),
+        axis.text=element_text(size=20),
+        axis.title=element_text(size=20, face="bold"))
+```
+]
+
+---
+# Check model diagnostics
+
+```{r, message=F, warning=F, fig.width=11, fig.height=5, fig.retina=2}
+library(ds4ling)
+ds4ling::diagnosis(model)
+```
+
+---
+# Run a few more diagnostics ...
+```{r, message=F}
+#We eyeball the scatterplot on page 13,
+#and the relationship is linear!
+
+#The mean of residuals is (almost) zero.
+mean(model$residual)
+#The homoskedasticity plot,
+#the first figure on page 14, looks like a blob.
+
+#We run the Durbin-Watson test,
+#and the residuals are not autocorrelated,
+#because we see a p-value higher than 0.05.
+library(car)
+durbinWatsonTest(model)
+```
+
+---
+# ... and one more
+
+```{r, message=F}
+#Predictors and residuals are uncorrelated!
+cor.test(fri_tidy_s$skewness, model$residuals)
+```
+
+---
+# Write up the results
+.pull-left[
+
+For the [s] segments, **cog** is positively correlated to **skewness** (p < 0.05). The scatterplot (on page 13) suggests that the higher the skewness, the higher the center of gravity. Their relation is linear, and the assumptions this claim is under prove to be valid:
++ the mean of the residuals is (almost) zero; 
+]
+
+---
+
+# Write up the results
+.pull-left[
+
+For the [s] segments, **cog** is positively correlated to **skewness** (p < 0.05). The scatterplot (on page 13) suggests that the higher the skewness, the higher the center of gravity. Their relation is linear, and the assumptions this claim is under prove to be valid:
++ the mean of the residuals is (almost) zero; 
++ the homoskedasticity plot is not fan-shaped;
+]
+
+---
+# Write up the results
+.pull-left[
+
+For the [s] segments, **cog** is positively correlated to **skewness** (p < 0.05). The scatterplot (on page 13) suggests that the higher the skewness, the higher the center of gravity. Their relation is linear, and the assumptions this claim is under prove to be valid:
++ the mean of the residuals is (almost) zero; 
++ the homoskedasticity plot is not fan-shaped;
++ residuals are not autocorrelated;
+]
+
+---
+# Write up the results
+.pull-left[
+
+For the [s] segments, **cog** is positively correlated to **skewness** (p < 0.05). The scatterplot (on page 13) suggests that the higher the skewness, the higher the center of gravity. Their relation is linear, and the assumptions this claim is under prove to be valid:
++ the mean of the residuals is (almost) zero; 
++ the homoskedasticity plot is not fan-shaped;
++ residuals are not autocorrelated;
++ predicators and residuals are uncorrelated.
+]
+
+---
+# Write up the results
+.pull-left[
+
+For the [s] segments, **cog** is positively correlated to **skewness** (p < 0.05). The scatterplot (on page 13) suggests that the higher the skewness, the higher the center of gravity. Their relation is linear, and the assumptions this claim is under prove to be valid:
++ the mean of the residuals is (almost) zero; 
++ the homoskedasticity plot is not fan-shaped;
++ residuals are not autocorrelated;
++ predicators and residuals are uncorrelated.
+]
+
+.pull-right[
+![](https://static.toiimg.com/photo/msid-74478877/74478877.jpg?909051)
+]
